@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import subprocess
 
 
-JOB_NAME = "VScode_tunnel"
+JOB_NAME = "code_tunnel"
 
 
 def get_parser():
@@ -18,21 +18,15 @@ def get_parser():
     parser.add_argument(
         "--ssh_command",
         dest="ssh_command",
-        default="ssh candide.iap.fr",
+        default="ssh disc",
         type=str,
         help="command used to ssh the cluster",
     )
-    parser.add_argument(
-        "--slurm_dir",
-        dest="slurm_dir",
-        default="/usr/local/slurm/latest/bin/",
-        type=str,
-        help="slurm directory",
-    )
+
     parser.add_argument(
         "--n_cpu",
         dest="n_cpu",
-        default=1,
+        default=12,
         type=int,
         help="how many cores to use. Default 1",
     )
@@ -46,17 +40,25 @@ def get_parser():
     parser.add_argument(
         "--time",
         dest="time",
-        default="4:00:00",
+        default="01:00:00",
         type=str,
-        help="walltime for the job. Default 4h",
+        help="walltime for the job. Default 1h",
     )
     parser.add_argument(
         "--log",
         dest="log",
-        default=r"\$HOME/vscode_tunnel.log",
+        default="/projects/mccleary_group/saha/vscode_slurms/vscode_tunnel.log",
         type=str,
-        help='where to save the log (on the cluster). Default '
+        help='where to save the stdout log (on the cluster). Default '
         '"$HOME/vscode_tunnel.log"',
+    )
+    parser.add_argument(
+        "--err",
+        dest="err",
+        default="/projects/mccleary_group/saha/vscode_slurms/vscode_tunnel.err",
+        type=str,
+        help='where to save the stderr log (on the cluster). Default '
+        '"$HOME/vscode_tunnel.err"',
     )
     parser.add_argument(
         "--node",
@@ -68,7 +70,7 @@ def get_parser():
     parser.add_argument(
         "--partition",
         dest="partition",
-        default=None,
+        default="sharing",
         type=str,
         help="which partition to use to submit the job. Default let the "
         "cluster decide",
@@ -87,11 +89,11 @@ def check_running(args):
 
     res = subprocess.getoutput(
         f"{args.ssh_command} "
-        f"{args.slurm_dir}/squeue --me --name={JOB_NAME} "
-        "--states=R -h -O JobID"
+        f"squeue --me --name={JOB_NAME} "
+        "--states=R,PD -h -O JobID"
     )
     res = res.strip()
-
+    print(f"check_running: {res}")
     if res != "":
         try:
             _ = int(res)
@@ -114,14 +116,15 @@ def main():
     if args.mode == "stop":
         if jobid == "":
             raise Exception("No tunnel open")
-        cmd = f'{args.ssh_command} "{args.slurm_dir}/scancel ' \
-            rf' \$({args.slurm_dir}/squeue --me --name={JOB_NAME} ' \
-            f'--states=R -h -O JobID)"'
+        cmd = f'{args.ssh_command} "scancel ' \
+            rf' \$(squeue --me --name={JOB_NAME} ' \
+            f'--states=R,PD -h -O JobID)"'
     elif args.mode == "start":
         if jobid != "":
             raise Exception(f"Tunnel already open. JobID: {jobid}")
-        cmd = f'{args.ssh_command} "{args.slurm_dir}/sbatch ' \
-            f'--output={args.log} --job-name={JOB_NAME} --time={args.time} ' \
+        cmd = f'{args.ssh_command} "sbatch ' \
+            f'--output={args.log} --error={args.err} ' \
+            f'--job-name={JOB_NAME} --time={args.time} ' \
             f'--cpus-per-task={args.n_cpu} --mem-per-cpu={args.mem}G'
         if args.exclusive:
             cmd += " --exclusive"
