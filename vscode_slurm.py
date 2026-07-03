@@ -47,7 +47,7 @@ def get_parser():
     parser.add_argument(
         "--log",
         dest="log",
-        default="/projects/mccleary_group/saha/vscode_slurms/vscode_tunnel.log",
+        default="/home/adfield/vscode_slurms/vscode_tunnel.log",
         type=str,
         help='where to save the stdout log (on the cluster). Default '
         '"$HOME/vscode_tunnel.log"',
@@ -55,7 +55,7 @@ def get_parser():
     parser.add_argument(
         "--err",
         dest="err",
-        default="/projects/mccleary_group/saha/vscode_slurms/vscode_tunnel.err",
+        default="/home/adfield/vscode_slurms/vscode_tunnel.err",
         type=str,
         help='where to save the stderr log (on the cluster). Default '
         '"$HOME/vscode_tunnel.err"',
